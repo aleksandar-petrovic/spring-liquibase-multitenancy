@@ -30,6 +30,3 @@ multitenancy:
     liquibase:
       enabled: true
       changeLog: classpath:db/changelog/db.changelog-tenant.yaml
-encryption:
-  secret: verySecret
-  salt: jozo

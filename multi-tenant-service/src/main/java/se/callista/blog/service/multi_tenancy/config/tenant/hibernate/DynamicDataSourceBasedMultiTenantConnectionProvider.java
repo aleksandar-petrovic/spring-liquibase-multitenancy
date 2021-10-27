@@ -14,7 +14,6 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.stereotype.Component;
 import se.callista.blog.service.multi_tenancy.domain.entity.Tenant;
 import se.callista.blog.service.multi_tenancy.repository.TenantRepository;
-import se.callista.blog.service.util.EncryptionService;
 
 import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
@@ -29,9 +28,6 @@ public class DynamicDataSourceBasedMultiTenantConnectionProvider
     private static final long serialVersionUID = -460277105706399638L;
 
     private static final String TENANT_POOL_NAME_SUFFIX = "DataSource";
-
-    @Autowired
-    private EncryptionService encryptionService;
 
     @Autowired
     @Qualifier("masterDataSource")
@@ -49,12 +45,6 @@ public class DynamicDataSourceBasedMultiTenantConnectionProvider
 
     @Value("${multitenancy.datasource-cache.expireAfterAccess:60}")
     private Integer expireAfterAccess;
-
-    @Value("${encryption.secret}")
-    private String secret;
-
-    @Value("${encryption.salt}")
-    private String salt;
 
     private LoadingCache<String, DataSource> tenantDataSources;
 
@@ -92,12 +82,10 @@ public class DynamicDataSourceBasedMultiTenantConnectionProvider
     }
 
     private DataSource createAndConfigureDataSource(Tenant tenant) {
-        String decryptedPassword = encryptionService.decrypt(tenant.getPassword(), secret, salt);
-
         HikariDataSource ds = dataSourceProperties.initializeDataSourceBuilder().type(HikariDataSource.class).build();
 
         ds.setUsername(tenant.getSchema());
-        ds.setPassword(decryptedPassword);
+        ds.setPassword(tenant.getPassword());
         ds.setJdbcUrl(tenant.getUrl());
 
         ds.setPoolName(tenant.getTenantId() + TENANT_POOL_NAME_SUFFIX);

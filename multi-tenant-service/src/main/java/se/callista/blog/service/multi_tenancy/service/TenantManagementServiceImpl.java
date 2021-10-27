@@ -15,7 +15,6 @@ import org.springframework.jdbc.core.StatementCallback;
 import org.springframework.stereotype.Service;
 import se.callista.blog.service.multi_tenancy.domain.entity.Tenant;
 import se.callista.blog.service.multi_tenancy.repository.TenantRepository;
-import se.callista.blog.service.util.EncryptionService;
 
 import javax.sql.DataSource;
 
@@ -24,7 +23,6 @@ import javax.sql.DataSource;
 @EnableConfigurationProperties(LiquibaseProperties.class)
 public class TenantManagementServiceImpl implements TenantManagementService {
 
-    private final EncryptionService encryptionService;
     private final DataSource dataSource;
     private final JdbcTemplate jdbcTemplate;
     private final LiquibaseProperties liquibaseProperties;
@@ -35,12 +33,9 @@ public class TenantManagementServiceImpl implements TenantManagementService {
     private final String urlPrefix;
     private final String liquibaseChangeLog;
     private final String liquibaseContexts;
-    private final String secret;
-    private final String salt;
 
     @Autowired
-    public TenantManagementServiceImpl(EncryptionService encryptionService,
-                                       DataSource dataSource,
+    public TenantManagementServiceImpl(DataSource dataSource,
                                        JdbcTemplate jdbcTemplate,
                                        @Qualifier("masterLiquibaseProperties")
                                        LiquibaseProperties liquibaseProperties,
@@ -49,11 +44,8 @@ public class TenantManagementServiceImpl implements TenantManagementService {
                                        @Value("${databaseName:}") String databaseName,
                                        @Value("${multitenancy.tenant.datasource.url-prefix}") String urlPrefix,
                                        @Value("${multitenancy.tenant.liquibase.changeLog}") String liquibaseChangeLog,
-                                       @Value("${multitenancy.tenant.liquibase.contexts:#{null}") String liquibaseContexts,
-                                       @Value("${encryption.secret}") String secret,
-                                       @Value("${encryption.salt}") String salt
+                                       @Value("${multitenancy.tenant.liquibase.contexts:#{null}") String liquibaseContexts
     ) {
-        this.encryptionService = encryptionService;
         this.dataSource = dataSource;
         this.jdbcTemplate = jdbcTemplate;
         this.liquibaseProperties = liquibaseProperties;
@@ -63,8 +55,6 @@ public class TenantManagementServiceImpl implements TenantManagementService {
         this.urlPrefix = urlPrefix;
         this.liquibaseChangeLog = liquibaseChangeLog;
         this.liquibaseContexts = liquibaseContexts;
-        this.secret = secret;
-        this.salt = salt;
     }
 
     private static final String VALID_SCHEMA_NAME_REGEXP = "[A-Za-z0-9_]*";
@@ -78,7 +68,6 @@ public class TenantManagementServiceImpl implements TenantManagementService {
         }
 
         String url = urlPrefix+databaseName+"?currentSchema="+schema;
-        String encryptedPassword = encryptionService.encrypt(password, secret, salt);
         try {
             createDatabase(schema, password);
             runLiquibase(dataSource, schema);
@@ -91,7 +80,7 @@ public class TenantManagementServiceImpl implements TenantManagementService {
                 .tenantId(tenantId)
                 .schema(schema)
                 .url(url)
-                .password(encryptedPassword)
+                .password(password)
                 .build();
         tenantRepo.save(tenant);
     }

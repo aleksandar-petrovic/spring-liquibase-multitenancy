@@ -13,7 +13,6 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 import se.callista.blog.service.multi_tenancy.domain.entity.Tenant;
 import se.callista.blog.service.multi_tenancy.repository.TenantRepository;
-import se.callista.blog.service.util.EncryptionService;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -31,16 +30,7 @@ import java.util.Collection;
 public class DynamicDataSourceBasedMultiTenantSpringLiquibase implements InitializingBean, ResourceLoaderAware {
 
     @Autowired
-    private EncryptionService encryptionService;
-
-    @Autowired
     private TenantRepository masterTenantRepository;
-
-    @Value("${encryption.secret}")
-    private String secret;
-
-    @Value("${encryption.salt}")
-    private String salt;
 
     private ResourceLoader resourceLoader;
     private String changeLog;
@@ -57,8 +47,7 @@ public class DynamicDataSourceBasedMultiTenantSpringLiquibase implements Initial
     protected void runOnAllTenants(Collection<Tenant> tenants) throws LiquibaseException {
         for(Tenant tenant : tenants) {
             log.info("Initializing Liquibase for tenant " + tenant.getTenantId());
-            String decryptedPassword = encryptionService.decrypt(tenant.getPassword(), secret, salt);
-            try (Connection connection = DriverManager.getConnection(tenant.getUrl(), tenant.getSchema(), decryptedPassword)) {
+            try (Connection connection = DriverManager.getConnection(tenant.getUrl(), tenant.getSchema(), tenant.getPassword())) {
                 DataSource tenantDataSource = new SingleConnectionDataSource(connection, false);
                 SpringLiquibase liquibase = this.getSpringLiquibase(tenantDataSource, tenant.getSchema());
                 liquibase.afterPropertiesSet();
