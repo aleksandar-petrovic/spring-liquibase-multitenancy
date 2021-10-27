@@ -63,8 +63,6 @@ public class TenantManagementServiceImpl implements TenantManagementService {
 
     @Override
     public void createTenant(String tenantId) {
-
-        // Verify schema string to prevent SQL injection
         if (!tenantId.matches(VALID_DATABASE_NAME_REGEXP)) {
             throw new TenantCreationException("Invalid db name: " + tenantId);
         }
@@ -74,9 +72,9 @@ public class TenantManagementServiceImpl implements TenantManagementService {
             createDatabase(tenantId);
             runLiquibase(url);
         } catch (DataAccessException e) {
-              throw new TenantCreationException("Error when creating schema: " + tenantId, e);
+              throw new TenantCreationException("Error when creating database: " + tenantId, e);
         } catch (LiquibaseException e) {
-            throw new TenantCreationException("Error when populating schema: ", e);
+            throw new TenantCreationException("Error when populating database: ", e);
         }
 
         Tenant tenant = Tenant.builder()

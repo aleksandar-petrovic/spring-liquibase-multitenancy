@@ -47,7 +47,7 @@ public class TenantPersistenceConfig {
 
     @Primary
     @Bean("tenantEntityManagerFactory")
-    public LocalContainerEntityManagerFactoryBean schemaBasedEntityManagerFactory(
+    public LocalContainerEntityManagerFactoryBean databaseBasedEntityManagerFactory(
             @Qualifier("dynamicDataSourceBasedMultiTenantConnectionProvider") MultiTenantConnectionProvider connectionProvider,
             @Qualifier("currentTenantIdentifierResolver") CurrentTenantIdentifierResolver tenantResolver) {
         LocalContainerEntityManagerFactoryBean emfBean = new LocalContainerEntityManagerFactoryBean();
@@ -62,12 +62,12 @@ public class TenantPersistenceConfig {
         properties.put(AvailableSettings.IMPLICIT_NAMING_STRATEGY, "org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy");
         properties.put(AvailableSettings.BEAN_CONTAINER, new SpringBeanContainer(this.beanFactory));
         properties.remove(AvailableSettings.DEFAULT_SCHEMA);
-        properties.put(AvailableSettings.MULTI_TENANT, MultiTenancyStrategy.SCHEMA);
+        properties.put(AvailableSettings.MULTI_TENANT, MultiTenancyStrategy.DATABASE);
         properties.put(AvailableSettings.MULTI_TENANT_CONNECTION_PROVIDER, connectionProvider);
         properties.put(AvailableSettings.MULTI_TENANT_IDENTIFIER_RESOLVER, tenantResolver);
         emfBean.setJpaPropertyMap(properties);
 
-        log.info("Schema-based tenantEntityManagerFactory set up successfully!");
+        log.info("Database-based tenantEntityManagerFactory set up successfully!");
         return emfBean;
     }
 
