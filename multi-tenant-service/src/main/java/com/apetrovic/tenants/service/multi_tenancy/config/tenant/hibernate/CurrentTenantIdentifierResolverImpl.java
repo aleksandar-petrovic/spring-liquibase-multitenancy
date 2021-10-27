@@ -1,11 +1,11 @@
 package com.apetrovic.tenants.service.multi_tenancy.config.tenant.hibernate;
 
+import com.apetrovic.tenants.service.multi_tenancy.util.TenantContext;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import com.apetrovic.tenants.service.multi_tenancy.util.TenantContext;
 
 @Component("currentTenantIdentifierResolver")
 public class CurrentTenantIdentifierResolverImpl implements CurrentTenantIdentifierResolver {
@@ -13,8 +13,7 @@ public class CurrentTenantIdentifierResolverImpl implements CurrentTenantIdentif
     private final String defaultTenant;
 
     @Autowired
-    public CurrentTenantIdentifierResolverImpl(
-            @Value("${multitenancy.master.schema:#{null}}") String defaultTenant) {
+    public CurrentTenantIdentifierResolverImpl(@Value("${multitenancy.default-tenant:#{null}}") String defaultTenant) {
         this.defaultTenant = defaultTenant;
     }
 

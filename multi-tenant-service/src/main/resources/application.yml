@@ -14,12 +14,12 @@ multitenancy:
   schema-cache:
     maximumSize: 100
     expireAfterAccess: 10
+  default-tenant: master
   master:
     datasource:
       url: jdbc:postgresql://localhost:5432/multi_tenants
       username: postgres
       password: postgres
-    schema: public
     liquibase:
       enabled: true
       changeLog: classpath:db/changelog/db.changelog-master.yaml

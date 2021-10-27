@@ -2,7 +2,6 @@ package com.apetrovic.tenants.service.config;
 
 import liquibase.integration.spring.SpringLiquibase;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.liquibase.LiquibaseDataSource;
 import org.springframework.boot.autoconfigure.liquibase.LiquibaseProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -20,9 +19,6 @@ import javax.sql.DataSource;
 @EnableConfigurationProperties(LiquibaseProperties.class)
 public class LiquibaseConfig {
 
-    @Value("${multitenancy.master.schema:#{null}}")
-    private String masterSchema;
-
     @Bean
     @ConfigurationProperties("multitenancy.master.liquibase")
     public LiquibaseProperties masterLiquibaseProperties() {
@@ -36,7 +32,6 @@ public class LiquibaseConfig {
         liquibase.setDataSource(liquibaseDataSource.getIfAvailable());
         liquibase.setChangeLog(liquibaseProperties.getChangeLog());
         liquibase.setContexts(liquibaseProperties.getContexts());
-        liquibase.setDefaultSchema(this.masterSchema);
         liquibase.setLiquibaseSchema(liquibaseProperties.getLiquibaseSchema());
         liquibase.setLiquibaseTablespace(liquibaseProperties.getLiquibaseTablespace());
         liquibase.setDatabaseChangeLogTable(liquibaseProperties.getDatabaseChangeLogTable());
