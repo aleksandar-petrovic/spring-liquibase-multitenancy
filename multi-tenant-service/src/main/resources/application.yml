@@ -1,0 +1,35 @@
+databaseName: blog
+
+server:
+  port: 8080
+spring:
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: public
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+
+multitenancy:
+  schema-cache:
+    maximumSize: 100
+    expireAfterAccess: 10
+  master:
+    datasource:
+      url: jdbc:postgresql://localhost:5432/blog
+      username: postgres
+      password: postgres
+    schema: public
+    liquibase:
+      changeLog: classpath:db/changelog/db.changelog-master.yaml
+  tenant:
+    datasource:
+      url-prefix: jdbc:postgresql://localhost:5432/
+    liquibase:
+      enabled: true
+      changeLog: classpath:db/changelog/db.changelog-tenant.yaml
+encryption:
+  secret: verySecret
+  salt: jozo
