@@ -8,7 +8,7 @@
         <version>2.3.3.RELEASE</version>
         <relativePath/>
     </parent>
-    <groupId>se.callista.blog</groupId>
+    <groupId>com.apetrovic.tenants</groupId>
     <artifactId>multi-tenant-service</artifactId>
     <version>0-SNAPSHOT</version>
     <name>multi-tenant-service</name>
