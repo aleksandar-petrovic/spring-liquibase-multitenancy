@@ -21,6 +21,7 @@ multitenancy:
       password: postgres
     schema: public
     liquibase:
+      enabled: true
       changeLog: classpath:db/changelog/db.changelog-master.yaml
   tenant:
     datasource:
@@ -29,4 +30,4 @@ multitenancy:
       password: postgres
     liquibase:
       enabled: true
-      changeLog: classpath:db/changelog/db.changelog-tenant.yaml
+      changeLog: classpath:db/changelog/db.changelog-master.yaml
