@@ -22,16 +22,15 @@ public class Tenant {
     @Column(name = "tenant_id")
     private String tenantId;
 
-    @Size(max = 30)
-    @Column(name = "schema")
-    private String schema;
-
     @Size(max = 256)
     @Column(name = "url")
     private String url;
 
     @Size(max = 30)
+    @Column(name = "username")
+    private String username;
+
+    @Size(max = 30)
     @Column(name = "password")
     private String password;
-
 }

@@ -84,7 +84,7 @@ public class DynamicDataSourceBasedMultiTenantConnectionProvider
     private DataSource createAndConfigureDataSource(Tenant tenant) {
         HikariDataSource ds = dataSourceProperties.initializeDataSourceBuilder().type(HikariDataSource.class).build();
 
-        ds.setUsername(tenant.getSchema());
+        ds.setUsername(tenant.getUsername());
         ds.setPassword(tenant.getPassword());
         ds.setJdbcUrl(tenant.getUrl());
 

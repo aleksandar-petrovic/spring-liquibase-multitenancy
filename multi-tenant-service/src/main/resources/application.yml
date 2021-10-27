@@ -1,5 +1,3 @@
-databaseName: blog
-
 server:
   port: 8080
 spring:
@@ -27,6 +25,8 @@ multitenancy:
   tenant:
     datasource:
       url-prefix: jdbc:postgresql://localhost:5432/
+      username: postgres
+      password: postgres
     liquibase:
       enabled: true
       changeLog: classpath:db/changelog/db.changelog-tenant.yaml

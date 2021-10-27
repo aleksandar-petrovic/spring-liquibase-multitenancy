@@ -12,98 +12,101 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.StatementCallback;
+import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 import org.springframework.stereotype.Service;
 import se.callista.blog.service.multi_tenancy.domain.entity.Tenant;
 import se.callista.blog.service.multi_tenancy.repository.TenantRepository;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.DriverManager;
 
 @Slf4j
 @Service
 @EnableConfigurationProperties(LiquibaseProperties.class)
 public class TenantManagementServiceImpl implements TenantManagementService {
+    private static final String VALID_DATABASE_NAME_REGEXP = "[A-Za-z0-9_]*";
 
-    private final DataSource dataSource;
     private final JdbcTemplate jdbcTemplate;
     private final LiquibaseProperties liquibaseProperties;
     private final ResourceLoader resourceLoader;
     private final TenantRepository tenantRepo;
 
-    private final String databaseName;
     private final String urlPrefix;
+    private final String dbUsername;
+    private final String dbPassword;
     private final String liquibaseChangeLog;
     private final String liquibaseContexts;
 
     @Autowired
-    public TenantManagementServiceImpl(DataSource dataSource,
-                                       JdbcTemplate jdbcTemplate,
+    public TenantManagementServiceImpl(JdbcTemplate jdbcTemplate,
                                        @Qualifier("masterLiquibaseProperties")
-                                       LiquibaseProperties liquibaseProperties,
+                                               LiquibaseProperties liquibaseProperties,
                                        ResourceLoader resourceLoader,
                                        TenantRepository tenantRepo,
-                                       @Value("${databaseName:}") String databaseName,
                                        @Value("${multitenancy.tenant.datasource.url-prefix}") String urlPrefix,
+                                       @Value("${multitenancy.tenant.datasource.username}") String dbUsername,
+                                       @Value("${multitenancy.tenant.datasource.password}") String dbPassword,
                                        @Value("${multitenancy.tenant.liquibase.changeLog}") String liquibaseChangeLog,
                                        @Value("${multitenancy.tenant.liquibase.contexts:#{null}") String liquibaseContexts
     ) {
-        this.dataSource = dataSource;
         this.jdbcTemplate = jdbcTemplate;
         this.liquibaseProperties = liquibaseProperties;
         this.resourceLoader = resourceLoader;
         this.tenantRepo = tenantRepo;
-        this.databaseName = databaseName;
         this.urlPrefix = urlPrefix;
+        this.dbUsername = dbUsername;
+        this.dbPassword = dbPassword;
         this.liquibaseChangeLog = liquibaseChangeLog;
         this.liquibaseContexts = liquibaseContexts;
     }
 
-    private static final String VALID_SCHEMA_NAME_REGEXP = "[A-Za-z0-9_]*";
-
     @Override
-    public void createTenant(String tenantId, String schema, String password) {
+    public void createTenant(String tenantId) {
 
         // Verify schema string to prevent SQL injection
-        if (!schema.matches(VALID_SCHEMA_NAME_REGEXP)) {
-            throw new TenantCreationException("Invalid schema name: " + schema);
+        if (!tenantId.matches(VALID_DATABASE_NAME_REGEXP)) {
+            throw new TenantCreationException("Invalid db name: " + tenantId);
         }
 
-        String url = urlPrefix+databaseName+"?currentSchema="+schema;
+        String url = urlPrefix + tenantId;
         try {
-            createDatabase(schema, password);
-            runLiquibase(dataSource, schema);
+            createDatabase(tenantId);
+            runLiquibase(url);
         } catch (DataAccessException e) {
-              throw new TenantCreationException("Error when creating schema: " + schema, e);
+              throw new TenantCreationException("Error when creating schema: " + tenantId, e);
         } catch (LiquibaseException e) {
             throw new TenantCreationException("Error when populating schema: ", e);
         }
+
         Tenant tenant = Tenant.builder()
                 .tenantId(tenantId)
-                .schema(schema)
                 .url(url)
-                .password(password)
+                .username(dbUsername)
+                .password(dbPassword)
                 .build();
         tenantRepo.save(tenant);
     }
 
-    private void createDatabase(String schema, String password) {
-        jdbcTemplate.execute((StatementCallback<Boolean>) stmt -> stmt.execute("CREATE USER " + schema+ " WITH ENCRYPTED PASSWORD '" + password + "'"));
-        jdbcTemplate.execute((StatementCallback<Boolean>) stmt -> stmt.execute("GRANT CONNECT ON DATABASE " + databaseName + " TO " + schema));
-        jdbcTemplate.execute((StatementCallback<Boolean>) stmt -> stmt.execute("CREATE SCHEMA " + schema + " AUTHORIZATION " + schema));
-        jdbcTemplate.execute((StatementCallback<Boolean>) stmt -> stmt.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA " + schema + " GRANT ALL PRIVILEGES ON TABLES TO " + schema));
-        jdbcTemplate.execute((StatementCallback<Boolean>) stmt -> stmt.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA " + schema + " GRANT USAGE ON SEQUENCES TO " + schema));
-        jdbcTemplate.execute((StatementCallback<Boolean>) stmt -> stmt.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA " + schema + " GRANT EXECUTE ON FUNCTIONS TO " + schema));
+    private void createDatabase(String dbName) {
+        jdbcTemplate.execute((StatementCallback<?>) stmt -> stmt.execute("CREATE DATABASE " + dbName));
+        jdbcTemplate.execute((StatementCallback<Boolean>) stmt -> stmt.execute("GRANT ALL PRIVILEGES ON DATABASE " + dbName + " TO " + dbUsername));
     }
 
-    private void runLiquibase(DataSource dataSource, String schema) throws LiquibaseException {
-        SpringLiquibase liquibase = getSpringLiquibase(dataSource, schema);
-        liquibase.afterPropertiesSet();
+    private void runLiquibase(String url) throws LiquibaseException {
+        try (Connection connection = DriverManager.getConnection(url, dbUsername, dbPassword)) {
+            DataSource dataSource = new SingleConnectionDataSource(connection, false);
+            SpringLiquibase liquibase = getSpringLiquibase(dataSource);
+            liquibase.afterPropertiesSet();
+        } catch (Exception ex) {
+            throw new TenantCreationException("Error while connectiong to tenant db");
+        }
     }
 
-    protected SpringLiquibase getSpringLiquibase(DataSource dataSource, String schema) {
+    protected SpringLiquibase getSpringLiquibase(DataSource dataSource) {
         SpringLiquibase liquibase = new SpringLiquibase();
         liquibase.setResourceLoader(resourceLoader);
         liquibase.setDataSource(dataSource);
-        liquibase.setDefaultSchema(schema);
         liquibase.setChangeLog(liquibaseChangeLog);
         liquibase.setContexts(liquibaseContexts);
         liquibase.setDropFirst(liquibaseProperties.isDropFirst());

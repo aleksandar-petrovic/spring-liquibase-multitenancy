@@ -44,12 +44,12 @@ public class DynamicDataSourceBasedMultiTenantSpringLiquibase implements Initial
         this.runOnAllTenants(masterTenantRepository.findAll());
     }
 
-    protected void runOnAllTenants(Collection<Tenant> tenants) throws LiquibaseException {
+    protected void runOnAllTenants(Collection<Tenant> tenants) {
         for(Tenant tenant : tenants) {
             log.info("Initializing Liquibase for tenant " + tenant.getTenantId());
-            try (Connection connection = DriverManager.getConnection(tenant.getUrl(), tenant.getSchema(), tenant.getPassword())) {
+            try (Connection connection = DriverManager.getConnection(tenant.getUrl(), tenant.getUsername(), tenant.getPassword())) {
                 DataSource tenantDataSource = new SingleConnectionDataSource(connection, false);
-                SpringLiquibase liquibase = this.getSpringLiquibase(tenantDataSource, tenant.getSchema());
+                SpringLiquibase liquibase = this.getSpringLiquibase(tenantDataSource);
                 liquibase.afterPropertiesSet();
             } catch (SQLException | LiquibaseException e) {
                 e.printStackTrace();
@@ -59,13 +59,12 @@ public class DynamicDataSourceBasedMultiTenantSpringLiquibase implements Initial
         }
     }
 
-    protected SpringLiquibase getSpringLiquibase(DataSource dataSource, String schema) {
+    protected SpringLiquibase getSpringLiquibase(DataSource dataSource) {
         SpringLiquibase liquibase = new SpringLiquibase();
         liquibase.setResourceLoader(getResourceLoader());
         liquibase.setDataSource(dataSource);
         liquibase.setChangeLog(getChangeLog());
         liquibase.setContexts(getContexts());
-        liquibase.setDefaultSchema(schema);
         liquibase.setDropFirst(isDropFirst());
         liquibase.setShouldRun(isShouldRun());
         return liquibase;
