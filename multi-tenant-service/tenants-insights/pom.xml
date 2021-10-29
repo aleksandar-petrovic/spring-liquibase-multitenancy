@@ -17,4 +17,16 @@
         <maven.compiler.target>11</maven.compiler.target>
     </properties>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.apetrovic.tenants</groupId>
+            <artifactId>data</artifactId>
+            <version>0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.apetrovic.tenants</groupId>
+            <artifactId>tenants</artifactId>
+            <version>0-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
 </project>
